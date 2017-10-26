@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -32,10 +34,45 @@ public class Multiplication1_1 {
 		}
 				
 		// Definitely, parameter type and name (Text matrix, Text entry, Context context) must not be modified
-		public void map(Text matrix, Text entry, Context context) throws IOException, InterruptedException {
+		public void map(Text matrix, Text entry, Context context)
+				throws IOException, InterruptedException {
 			// Implement map function.
+			
+			String matrixName = matrix.toString();
+			String entryString = entry.toString();
+			System.out.println(entryString);
+			String[] csv = entryString.split(",");
+			
+			System.out.println(matrixName);
+			String row = csv[0];
+			System.out.println(row);
+			String col = csv[1];
+			System.out.println(col);
+			String value = csv[2];
+			System.out.println(value);
+			
+			if(matrixName.equals("a"))
+			{
+				for (int i=0; i < n_first_cols; i++)
+				{
+					String newKey = row + "," +Integer.toString(i);
+					String newValue = "a,"+ col +"," + value;
+					context.write(new Text(newKey), new Text(newValue));
+				}
+			}
+			if(matrixName.equals("b"))
+			{
+				for (int i=0; i < n_first_rows; i++)
+				{
+					String newKey = Integer.toString(i) + "," +col;
+					String newValue = "b,"+ row +"," + value;
+					context.write(new Text(newKey), new Text(newValue));
+				}
+			}
+			
 		}
 	}
+	
 
 	// Complete the Matrix1_1_Reducer class. 	
 	// Definitely, Generic type (Text, Text, Text, Text) must not be modified
@@ -58,13 +95,40 @@ public class Multiplication1_1 {
 		
 		// Definitely, parameters type (Text, Iterable<Text>, Context) must not be modified
 		// Optional, parameters name (key, values, context) can be modified
-		public void reduce(Text entry, Iterable<Text> entryComponents, Context context) throws IOException, InterruptedException {
+		public void reduce(Text entry, Iterable<Text> entryComponents, Context context) 
+				throws IOException, InterruptedException {
 			// Implement reduce function.
+			float result = 0.0f;
+			HashMap<Integer, Float> hashA = new HashMap<Integer, Float>();
+			HashMap<Integer, Float> hashB = new HashMap<Integer, Float>();
+			for (Text val : entryComponents) {
+				String[] value = val.toString().split(",");
+				if (value[0].equals("a")){
+					hashA.put(Integer.parseInt(value[1]), Float.parseFloat(value[2]));
+				}	
+				else {
+					hashB.put(Integer.parseInt(value[1]), Float.parseFloat(value[2]));
+				}
+				
+			}
+			for (int j=0 ; j< n_first_cols; j++) {
+				float m_ij = hashA.containsKey(j) ? hashA.get(j) : 0.0f;
+				float n_jk = hashB.containsKey(j) ? hashB.get(j) : 0.0f;
+				result += m_ij*n_jk;
+			}
+				
+			if (result != 0.0f) {
+				context.write(entry,new Text(Float.toString(result)) );
+			}
 		}
+			
+		
 	}
 	
+	
 	// Definitely, Main function must not be modified 
-	public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
+	public static void main(String[] args) 
+			throws IOException, InterruptedException, ClassNotFoundException {
 		Configuration conf = new Configuration();
 		Job job = Job.getInstance(conf, "Matrix Multiplication1_1");
 
@@ -85,3 +149,7 @@ public class Multiplication1_1 {
 		System.exit(job.waitForCompletion(true) ? 0 : 1);
 	}
 }
+	
+
+	
+	
